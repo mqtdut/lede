@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: GPL-2.0-or-later OR MIT
-/dts-v1/;
 
 #include "mt7621.dtsi"
 
@@ -14,17 +13,14 @@
 		led-boot = &led_internet;
 		led-failsafe = &led_internet;
 		led-upgrade = &led_internet;
-	};
-
-	chosen {
-		bootargs = "console=ttyS0,57600";
+		label-mac-device = &wifi0;
 	};
 
 	leds {
 		compatible = "gpio-leds";
 
 		led_internet: internet {
-			label = "y2:blue:internet";
+			label = "blue:internet";
 			gpios = <&gpio 15 GPIO_ACTIVE_LOW>;
 		};
 	};
@@ -46,7 +42,7 @@
 	flash@0 {
 		compatible = "jedec,spi-nor";
 		reg = <0>;
-		spi-max-frequency = <80000000>;
+		spi-max-frequency = <50000000>;
 		m25p,fast-read;
 
 		partitions {
@@ -66,10 +62,32 @@
 				read-only;
 			};
 
-			factory: partition@40000 {
+			partition@40000 {
 				label = "factory";
 				reg = <0x40000 0x10000>;
 				read-only;
+
+				nvmem-layout {
+					compatible = "fixed-layout";
+					#address-cells = <1>;
+					#size-cells = <1>;
+
+					eeprom_factory_0: eeprom@0 {
+						reg = <0x0 0x4da8>;
+					};
+
+					macaddr_factory_4: macaddr@4 {
+						reg = <0x4 0x6>;
+					};
+
+					macaddr_factory_e000: macaddr@e000 {
+						reg = <0xe000 0x6>;
+					};
+
+					macaddr_factory_e006: macaddr@e006 {
+						reg = <0xe006 0x6>;
+					};
+				};
 			};
 
 			partition@50000 {
@@ -89,23 +107,64 @@
 	wifi@0,0 {
 		compatible = "mediatek,mt76";
 		reg = <0x0000 0 0 0 0>;
-		mediatek,mtd-eeprom = <&factory 0x0>;
+		nvmem-cells = <&eeprom_factory_0>;
+		nvmem-cell-names = "eeprom";
+
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		wifi0: band@0 {
+			reg = <0>;
+			nvmem-cells = <&macaddr_factory_4>;
+			nvmem-cell-names = "mac-address";
+		};
 	};
 };
 
-&ethernet {
-	compatible = "mediatek,ralink-mt7621-eth";
-	mediatek,switch = <&gsw>;
-	mtd-mac-address = <&factory 0xe000>;
+&gmac0 {
+	nvmem-cells = <&macaddr_factory_e000>;
+	nvmem-cell-names = "mac-address";
 };
 
-&switch0 {
-	/delete-property/ compatible;
-	phy-mode = "rgmii";
+&gmac1 {
+	status = "okay";
+	label = "wan";
+	phy-handle = <&ethphy4>;
+
+	nvmem-cells = <&macaddr_factory_e006>;
+	nvmem-cell-names = "mac-address";
+};
+
+&ethphy4 {
+	/delete-property/ interrupts;
 };
 
 &gsw {
-	compatible = "mediatek,ralink-mt7621-gsw";
+
+		port@0 {
+		compatible = "mediatek,mt753x-port";
+			status = "okay";
+			label = "lan4";
+		};
+
+		port@1 {
+		compatible = "mediatek,mt753x-port";
+			status = "okay";
+			label = "lan3";
+		};
+
+		port@2 {
+		compatible = "mediatek,mt753x-port";
+			status = "okay";
+			label = "lan2";
+		};
+
+		port@3 {
+		compatible = "mediatek,mt753x-port";
+			status = "okay";
+			label = "lan1";
+		};
+
 };
 
 &state_default {

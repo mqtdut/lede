@@ -1,13 +1,16 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ustream-ssl
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL=$(PROJECT_GIT)/project/ustream-ssl.git
-PKG_SOURCE_DATE:=2020-03-13
-PKG_SOURCE_VERSION:=5e1bc3429cbf9c3be4db65ef5dbf21ea99cf5b95
-PKG_MIRROR_HASH:=c59dea9b98d3ce88d886f7c7b3b252c55312ad281b731ab9172ae78570f1b643
+PKG_SOURCE_DATE:=2026-03-01
+PKG_SOURCE_VERSION:=99f1c0db5a729f615bc5114b3b52fd8ac8083f34
+PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(subst -,.,$(PKG_SOURCE_DATE))~$(call version_abbrev,$(PKG_SOURCE_VERSION))
+PKG_SOURCE:=$(PKG_SOURCE_SUBDIR).tar.zst
+PKG_MIRROR_HASH:=631ce829a510895cdf0bcfa48970e963e6c910ccd09718b90d85e455ec35f290
+PKG_BUILD_DIR:=$(BUILD_DIR)/$(if $(BUILD_VARIANT),$(PKG_NAME)-$(BUILD_VARIANT)/)$(PKG_SOURCE_SUBDIR)
 CMAKE_INSTALL:=1
 
 PKG_LICENSE:=ISC
@@ -23,7 +26,7 @@ define Package/libustream/default
   CATEGORY:=Libraries
   TITLE:=ustream SSL Library
   DEPENDS:=+libubox
-  ABI_VERSION:=20200215
+  ABI_VERSION:=20201210
 endef
 
 define Package/libustream-openssl
@@ -37,13 +40,15 @@ define Package/libustream-wolfssl
   $(Package/libustream/default)
   TITLE += (wolfssl)
   DEPENDS += +PACKAGE_libustream-wolfssl:libwolfssl
+  CONFLICTS := libustream-openssl
   VARIANT:=wolfssl
 endef
 
 define Package/libustream-mbedtls
   $(Package/libustream/default)
   TITLE += (mbedtls)
-  DEPENDS += +libmbedtls
+  DEPENDS += +PACKAGE_libustream-mbedtls:libmbedtls
+  CONFLICTS := libustream-openssl libustream-wolfssl
   VARIANT:=mbedtls
   DEFAULT_VARIANT:=1
 endef
